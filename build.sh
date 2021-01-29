@@ -24,6 +24,8 @@ BUILD_CLANG_TRIPLE=aarch64-linux-gnu-
 
 
 (
+START_TIME=`date +%s`
+
 make -j$(nproc) ARCH=$ARCH -C $(pwd) O=$(pwd)/out \
 		exynos9830-${VARIANT}_defconfig || exit -1
 
@@ -31,11 +33,19 @@ make -j$(nproc) ARCH=$ARCH -C $(pwd) O=$(pwd)/out \
 		CC=$BUILD_CC \
 		CLANG_TRIPLE=$BUILD_CLANG_TRIPLE \
 		CROSS_COMPILE=$BUILD_CROSS_COMPILE || exit -1
-) 2>&1 | tee -a ./out/build.log
 
 cp $(pwd)/out/arch/$ARCH/boot/Image $(pwd)/out/Image
 
 $(pwd)/tools/mkdtimg cfg_create $(pwd)/out/dtb.img dt.configs/exynos9830.cfg -d ${DTB_DIR}/exynos
 $(pwd)/tools/mkdtimg cfg_create $(pwd)/out/dtbo.img dt.configs/${VARIANT}.cfg -d ${DTB_DIR}/samsung
+
+END_TIME=`date +%s`
+let "ELAPSED_TIME=$END_TIME-$START_TIME"
+echo ""
+echo -e "\e[1;32mTotal compile time is $ELAPSED_TIME seconds\e[0m"
+echo ""
+) 2>&1 | tee -a ./out/build.log
+
+
 
 
