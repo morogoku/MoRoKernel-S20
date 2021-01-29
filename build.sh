@@ -13,7 +13,7 @@ export PLATFORM_VERSION=11
 export ANDROID_MAJOR_VERSION=r
 export ARCH=arm64
 
-export LOCALVERSION="-MoRoKernel-G986B-v0.3"
+export LOCALVERSION="-MoRoKernel-G986B-v0.4"
 
 DTB_DIR=$(pwd)/out/arch/$ARCH/boot/dts
 rm ${DTB_DIR}/exynos/* ${DTB_DIR}/samsung/* 2>/dev/null
