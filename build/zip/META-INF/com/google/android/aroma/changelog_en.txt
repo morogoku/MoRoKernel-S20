@@ -1,0 +1,18 @@
+	
+<b>KERNEL INFORMATION:</b>
+
+	NAME	: <b><#selectbg_g>MoRoKernel S20</#></b>	
+	VERSION	: <b><#selectbg_g>v0</#></b>
+	DATE	: <b><#selectbg_g>31/1/2021</#></b>
+	AUTHOR	: <b><#selectbg_g>MoroGoku</#></b>
+
+	<#f00><b>ONLY FOR Exyunos Galaxy S20, S20 Plus and S20 Ultra</b></#>
+
+
+<b>CHANGELOG:</b>
+
+<u><b><#selectbg_g>MoRoKernel S20 v0</#></b></u>
+<*></*>
+<*></*>
+
+
