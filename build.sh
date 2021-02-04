@@ -12,18 +12,18 @@ export PLATFORM_VERSION=11
 export ANDROID_MAJOR_VERSION=r
 export ARCH=arm64
 
-BUILD_CROSS_COMPILE=$PWD/../toolchains/aarch64-linux-android-4.9/bin/aarch64-linux-android-
-BUILD_CC=$PWD/../toolchains/clang-9.0.3-r353983c/bin/clang
-BUILD_CLANG_TRIPLE=aarch64-linux-gnu-
-
-OUTDIR=$PWD/out
+RDIR=$(pwd)
+OUTDIR=$RDIR/out
 DTB_DIR=$OUTDIR/arch/$ARCH/boot/dts
+
+BUILD_CROSS_COMPILE=$RDIR/../toolchains/aarch64-linux-android-4.9/bin/aarch64-linux-android-
+BUILD_CC=$RDIR/../toolchains/clang-9.0.3-r353983c/bin/clang
+BUILD_CLANG_TRIPLE=aarch64-linux-gnu-
 
 K_VERSION="v0"
 K_BASE="CUA3"
 K_NAME="MoRoKernel"
 export KBUILD_BUILD_VERSION="1"
-export LOCALVERSION="-$K_NAME-G986B-$KVERSION"
 
 
 
@@ -40,7 +40,7 @@ FUNC_DELETE_PLACEHOLDERS()
 FUNC_CLEAN()
 {
 	make mrproper
-	#rm ${DTB_DIR}/exynos/* ${DTB_DIR}/samsung/* 2>/dev/null
+	rm ${DTB_DIR}/exynos/* ${DTB_DIR}/samsung/* 2>/dev/null
 }
 
 FUNC_BUILD_KERNEL()
@@ -48,58 +48,57 @@ FUNC_BUILD_KERNEL()
 	echo ""
 	echo "Defconfig: $DEFCONFIG for $VARIANT $DEVICE"
         
-	cp -f $PWD/arch/$ARCH/configs/exynos9830_defconfig $PWD/arch/$ARCH/configs/tmp_defconfig
-	cat $PWD/arch/$ARCH/configs/$DEFCONFIG >> $PWD/arch/$ARCH/configs/tmp_defconfig
+	cp -f $RDIR/arch/$ARCH/configs/exynos9830_defconfig $RDIR/arch/$ARCH/configs/tmp_defconfig
+	cat $RDIR/arch/$ARCH/configs/$DEFCONFIG >> $RDIR/arch/$ARCH/configs/tmp_defconfig
 
-	echo ""
-	echo "Compiling kernel"
+	make -j$(nproc) ARCH=$ARCH -C $RDIR O=$OUTDIR tmp_defconfig
 
-	make -j$(nproc) ARCH=$ARCH -C $PWD O=$OUTDIR tmp_defconfig
-
-	make -j$(nproc) ARCH=$ARCH -C $PWD O=$OUTDIR \
+	make -j$(nproc) ARCH=$ARCH -C $RDIR O=$OUTDIR \
 			CC=$BUILD_CC \
 			CLANG_TRIPLE=$BUILD_CLANG_TRIPLE \
 			CROSS_COMPILE=$BUILD_CROSS_COMPILE
 	
-	rm -f $PWD/arch/$ARCH/configs/tmp_defconfig
+	mv $OUTDIR/arch/$ARCH/boot/Image $OUTDIR/Image
+	rm -f $RDIR/arch/$ARCH/configs/tmp_defconfig
 }
 
 FUNC_BUILD_DTB()
 {
 	echo ""
 	echo "Creating dtb.img"
+	echo ""
 
-	$PWD/tools/mkdtimg cfg_create $OUTDIR/dtb.img dt.configs/exynos9830.cfg -d ${DTB_DIR}/exynos
+	$RDIR/tools/mkdtimg cfg_create $OUTDIR/dtb.img dt.configs/exynos9830.cfg -d ${DTB_DIR}/exynos
 }
 
 FUNC_BUILD_DTBO()
 {
 	echo ""
 	echo "Creating dtbo.img"
+	echo ""
 
-	$PWD/tools/mkdtimg cfg_create $OUTDIR/dtbo.img dt.configs/${VARIANT}.cfg -d ${DTB_DIR}/samsung
+	$RDIR/tools/mkdtimg cfg_create $OUTDIR/dtbo.img dt.configs/${VARIANT}.cfg -d ${DTB_DIR}/samsung
 }
 
 FUNC_BUILD_RAMDISK()
 {
 	echo ""
-	echo "Building Ramdisk"
+	echo "Building Ramdisk for $DEVICE"
+	echo ""
 
-	cd $PWD/build
+	cd $RDIR/build
 	mkdir -p $OUTDIR/build/temp 2>/dev/null
 	cp -rf aik/. $OUTDIR/build/temp
 	
 	cp -rf ramdisk/ramdisk/. $OUTDIR/build/temp/ramdisk
 	cp -rf ramdisk/split_img/. $OUTDIR/build/temp/split_img
 	
-	rm -f temp/split_img/boot.img-zImage 2>/dev/null
-	rm -f temp/split_img/boot.img-dtb 2>/dev/null
+	rm -f $OUTDIR/build/temp/split_img/boot.img-zImage 2>/dev/null
+	rm -f $OUTDIR/build/temp/split_img/boot.img-dtb 2>/dev/null
 
-	cp $OUTDIR/arch/$ARCH/boot/Image temp/split_img/boot.img-zImage
-	cp $OUTDIR/arch/$ARCH/boot/dtb.img temp/split_img/boot.img-dtb
-	cd temp
-
-	echo "Device: $DEVICE"
+	mv $OUTDIR/Image $OUTDIR/build/temp/split_img/boot.img-zImage
+	mv $OUTDIR/dtb.img $OUTDIR/build/temp/split_img/boot.img-dtb
+	cd $OUTDIR/build/temp
 
 	./repackimg.sh
 
@@ -113,42 +112,37 @@ FUNC_BUILD_FLASHABLES()
 {
 	cd $OUTDIR/build
 	mkdir temp
-	cp -rf $PWD/build/zip/. temp
-	cd $OUTDIR/build/kernel-temp
+	cp -rf $RDIR/build/zip/. temp
+	cd kernel-temp
 	echo ""
 	echo "Compressing kernels..."
+	echo ""
 	tar cv * | xz -9 > ../temp/moro/kernel.tar.xz
 
 	cd $OUTDIR/build/temp
-	zip -9 -r ../$ZIP_NAME *
+	zip -9 -r ../../$ZIP_NAME *
 
-	cd ..
-	rm -rf temp kernel-temp ramdisk-temp 2>/dev/null
-}
-
-FUNC_INFO()
-{
-	echo ""
-	echo -e "\e[1;34m**********************************\e[1;32m"
-	echo " DEVICE: $DEVICE $VARIANT"
-	echo " DEFCONFIG: $DEFCONFIG"
-	echo -e "\e[1;34m**********************************\e[0m"
-	echo ""
+	cd $RDIR
+	rm -rf $OUTDIR/build
 }
 
 MAIN()
 {
-	rm -fR $OUTDIR 2>/dev/null
+	export LOCALVERSION="-$K_NAME-$DEVICE-$K_BASE-$KVERSION"
+
 	mkdir $OUTDIR 2>/dev/null
 
 	(
 		START_TIME=`date +%s`
-		FUNC_INFO
 		FUNC_DELETE_PLACEHOLDERS
 		FUNC_CLEAN
 		FUNC_BUILD_KERNEL
 		FUNC_BUILD_DTB
 		#FUNC_BUILD_DTBO
+		FUNC_BUILD_RAMDISK
+		if [ $ZIP == "yes" ]; then
+		    FUNC_BUILD_FLASHABLES
+		fi
 		END_TIME=`date +%s`
 		let "ELAPSED_TIME=$END_TIME-$START_TIME"
 		echo ""
@@ -182,18 +176,44 @@ case $prompt in
 	VARIANT=x1sxxx
 	DEFCONFIG=s20_defconfig
 	DEVICE=G981B
+	ZIP=yes
+	ZIP_NAME=$LOCALVERSION.zip
 	MAIN
 	;;
 2)
 	VARIANT=y2sxxx
 	DEFCONFIG=s20p_defconfig
 	DEVICE=G986B
+	ZIP=yes
+	ZIP_NAME=$LOCALVERSION.zip
 	MAIN
 	;;
 3)
 	VARIANT=z3sxxx
 	DEFCONFIG=s20u_defconfig
 	DEVICE=G988B
+	ZIP=yes
+	ZIP_NAME=$LOCALVERSION.zip
+	MAIN
+	;;
+4)
+	VARIANT=x1sxxx
+	DEFCONFIG=s20_defconfig
+	DEVICE=G981B
+	ZIP=no
+	MAIN
+
+	VARIANT=y2sxxx
+	DEFCONFIG=s20p_defconfig
+	DEVICE=G986B
+	ZIP=no
+	MAIN
+
+	VARIANT=z3sxxx
+	DEFCONFIG=s20u_defconfig
+	DEVICE=G988B
+	ZIP=yes
+	ZIP_NAME=$K_NAME-S20AIO-$K_BASE-$K_VERSION.zip
 	MAIN
 	;;
 *)
