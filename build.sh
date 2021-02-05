@@ -20,7 +20,7 @@ BUILD_CROSS_COMPILE=$RDIR/../toolchains/aarch64-linux-android-4.9/bin/aarch64-li
 BUILD_CC=$RDIR/../toolchains/clang-9.0.3-r353983c/bin/clang
 BUILD_CLANG_TRIPLE=aarch64-linux-gnu-
 
-K_VERSION="v0"
+K_VERSION="v0.5"
 K_BASE="CUA3"
 K_NAME="MoRoKernel"
 export KBUILD_BUILD_VERSION="1"
